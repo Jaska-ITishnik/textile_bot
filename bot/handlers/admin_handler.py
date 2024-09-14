@@ -1,11 +1,8 @@
-import requests
 from aiogram import Router, F, Bot
 from aiogram.enums import ChatType, ParseMode
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
-from aiogram.methods import set_my_commands
-from aiogram.types import Message, CallbackQuery, URLInputFile
-
+from aiogram.types import Message, CallbackQuery
 from bot.DTO.data_to_object import Employee, Task, User
 from bot.bot_commands.all_commands import SUPER_ADMINS, on_startup
 from bot.bot_functions.button_functions import admin_task_edit_button, \
@@ -129,12 +126,7 @@ async def description_handler(message: Message, state: FSMContext):
 
 @admin_router.message(TaskAddForm.photo, F.photo)
 async def description_handler(message: Message, state: FSMContext):
-    file = await message.bot.get_file(message.photo[-1].file_id)
-    download_file = await message.bot.download_file(file.file_path)
-    response = requests.post('https://telegra.ph/upload', files={'file': download_file})
-    data = response.json()
-    url = "https://telegra.ph" + data[0].get('src').replace(r"\\", '')
-    await state.update_data(photo=url)
+    await state.update_data(photo=message.photo[0].file_id)
     await state.set_state(TaskAddForm.description)
     await message.answer('Ishning tavsifini kiriting')
 
@@ -381,9 +373,8 @@ async def detail_task_handler(callback: CallbackQuery, state: FSMContext):
 <b>Ish kodi:</b>  <i>{session_task[0][3]}</i>
 <b>Ish holati:</b>  <i>{status}</i>
         """
-    img = URLInputFile(url=session_task[0][1])
     await callback.message.delete()
-    await callback.message.answer_photo(photo=img, caption=text, parse_mode=ParseMode.HTML)
+    await callback.message.answer_photo(photo=session_task[0][1], caption=text, parse_mode=ParseMode.HTML)
     await state.set_state(TaskUpdateForm.task_code)
     await callback.message.answer(f"""
 <b>Ish kodi:</b> <i>{session_task[0][3]}</i>
@@ -409,8 +400,7 @@ async def description_handler(message: Message, state: FSMContext):
     session_task = Task().select(id=data['task_id'])
     await state.update_data(description=message.text)
     await state.set_state(TaskUpdateForm.photo)
-    img = URLInputFile(url=session_task[0][1])
-    await message.answer_photo(photo=img, caption='Ishning eski surati 👆')
+    await message.answer_photo(photo=session_task[0][1], caption='Ishning eski surati 👆')
     await message.answer('Yangi suratni kiriting🖼')
 
 
@@ -418,12 +408,7 @@ async def description_handler(message: Message, state: FSMContext):
 async def photo_handler(message: Message, state: FSMContext):
     data = await state.get_data()
     session_task = Task().select(id=data['task_id'])
-    file = await message.bot.get_file(message.photo[-1].file_id)
-    download_file = await message.bot.download_file(file.file_path)
-    response = requests.post('https://telegra.ph/upload', files={'file': download_file})
-    data = response.json()
-    url = "https://telegra.ph" + data[0].get('src').replace(r"\\", '')
-    await state.update_data(photo=url)
+    await state.update_data(photo=message.photo[-1].file_id)
     data = await state.get_data()
     Task().update_task_employee(task_code=data['task_code'], image=data['photo'], description=data['description'],
                                 id=session_task[0][0])
@@ -531,6 +516,7 @@ async def admin_delete_handler(message: Message, state: FSMContext, bot: Bot):
     User().delete_user(telegram_id=telegram_id)
     await message.answer("Admin muvofaqiyatliy o'chirildi😉")
     await on_startup(bot)
+
 
 @admin_router.message(Command("adminlar_royxati"))
 async def admin_delete_handler(message: Message):

@@ -7,7 +7,6 @@ from aiogram.enums import ChatType, ParseMode
 from aiogram.filters import CommandStart
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message, URLInputFile
-from aiogram.utils.keyboard import InlineKeyboardBuilder
 from redis_dict import RedisDict
 
 from bot.DTO.data_to_object import Employee, Task
@@ -20,7 +19,8 @@ from bot.states import GetTaskIDForm, GetTelegramIDForm
 user_router = Router()
 
 user_router.message.filter(F.chat.type == ChatType.PRIVATE)
-database = RedisDict('textile')
+
+database = RedisDict()
 
 
 @user_router.message(CommandStart())
@@ -48,10 +48,7 @@ async def book_handler(callback: CallbackQuery, state: FSMContext):
     await state.update_data(task_id=callback.data.split("_")[-1])
     employees = Employee().select(status='free')
     if employees:
-        ikb = InlineKeyboardBuilder()
         text = ""
-        status = ""
-        buttons = []
         for employee in list(employees):
             text += (f"""
 <b>ID</b>: <i>{employee[0]}</i>
@@ -109,12 +106,12 @@ async def employee_choose_handler(callback: CallbackQuery):
 <b>Ishni kim olgan:</b> <i>{employee_info[0][1]} {employee_info[0][2]}</i>
 <b>Olingan vaqti:</b> <i>{str(datetime.now().time()).split('.')[0]}</i>
     """
-    if task_info[0][1]:
-        img = URLInputFile(url=task_info[0][1])
-    else:
-        img = URLInputFile(url='https://telegra.ph/file/acd0ab0de7bbb50bdf304.png')
+    # if task_info[0][1]:
+    #     img = URLInputFile(url=task_info[0][1])
+    # else:
+    #     img = URLInputFile(url='https://telegra.ph/file/acd0ab0de7bbb50bdf304.png')
     await callback.message.edit_caption(caption=f'{announce_to_employee}', parse_mode=ParseMode.HTML)
-    await callback.message.bot.send_photo(chat_id=employee_telegram_id, photo=img,
+    await callback.message.bot.send_photo(chat_id=employee_telegram_id, photo=task_info[0][1],
                                           caption=announce_to_employee,
                                           reply_markup=employee_confirmation(employee_telegram_id),
                                           parse_mode=ParseMode.HTML)
@@ -137,7 +134,8 @@ async def admin_confirmation_handler(callback: CallbackQuery):
     database['current_employee'] = callback.from_user.model_dump_json()
     current_employee = json.loads(database['current_employee'])
     task_id = Employee().select('task_id', telegram_id=current_employee['id'])[0][0]
-    img = URLInputFile(url=Task().select(id=task_id)[0][1])
+    # img = URLInputFile(url=Task().select(id=task_id)[0][1])
+    img = Task().select(id=task_id)[0][1]
     await callback.message.bot.send_photo(chat_id=RESPONSIBLE_ADMIN, caption=text, photo=img,
                                           reply_markup=admin_confirmation())
     await callback.message.delete()
@@ -182,10 +180,10 @@ async def admin_desicion_handler(callback: CallbackQuery):
         await callback.message.delete()
     elif callback.data == 'admin_ignore':
         task_photo = Task().select(id=task_id)[0][1]
-        img = URLInputFile(url=task_photo)
+        # img = URLInputFile(url=task_photo)
         await callback.message.delete()
         await callback.message.bot.send_photo(chat_id=int(text.split()[-1]),
-                                              caption=text, photo=img,
+                                              caption=text, photo=task_photo,
                                               reply_markup=employee_confirmation(int(text.split()[-1])))
         await callback.message.bot.send_message(chat_id=int(text.split()[-1]),
                                                 text="Sizning ishingiz tasdiqlanmadi!🤕",

@@ -3,7 +3,7 @@ from aiogram.types import BotCommand, BotCommandScopeChat
 
 from bot.DTO.data_to_object import User
 
-RESPONSIBLE_ADMIN = User().select('telegram_id', type='admin', id=2)[0][0]
+RESPONSIBLE_ADMIN = User().select('telegram_id', type='admin', id=3)[0][0]
 SIMPLE_ADMINS = []
 SUPER_ADMINS = []
 MONOBLOCKS = []

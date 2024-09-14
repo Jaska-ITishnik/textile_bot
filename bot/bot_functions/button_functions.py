@@ -23,10 +23,8 @@ def choose_task_inline_buttons(state: FSMContext):
     for i in task_ids:
         task_id_list.append(i[0])
     random_task_id = random.choice(task_id_list)
-    task_code = Task().select('task_code', id=random_task_id)
     buttons = []
     buttons.append(InlineKeyboardButton(text=f"Ish", callback_data=f"task_choose_{random_task_id}"))
-    # buttons.append(InlineKeyboardButton(text='⬅Orqaga', callback_data='↪Chiqish'))
     markup.add(*buttons)
     markup.adjust(2, repeat=True)
     return markup
@@ -40,12 +38,12 @@ async def task_show(state: FSMContext, task_id, employee_telegram_id):
         InlineKeyboardButton(text='Tanlash', callback_data=f"employee_task_choose_{task_id}_{employee_telegram_id}"),
     ]
 
-    img = URLInputFile(url=task_info[0][1])
+    # img = URLInputFile(url=task_info[0][1])
     caption = f"<b>Ish tavsifi:</b> <i>{task_info[0][2]}</i>" + f"\n<b>Ish kodi:</b> <i>{task_info[0][3]}</i>"
     task_markup.add(*buttons)
     task_markup.adjust(3, 2)
     task_markup = task_markup.as_markup()
-    return (task_markup, img, caption)
+    return (task_markup, task_info[0][1], caption)
 
 
 def employee_id_inline_button():
